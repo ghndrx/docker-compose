@@ -1,0 +1,266 @@
+version: '3'
+
+services:
+  # Traefik service for reverse proxy and SSL termination
+  traefik:
+    image: traefik:v2.4
+    command:
+      - "--api.insecure=true" # Enable insecure API for Traefik dashboard
+      - "--providers.docker=true" # Enable Docker provider for Traefik
+      - "--providers.docker.exposedbydefault=false" # Do not expose containers by default
+      - "--entrypoints.web.address=:80" # HTTP entrypoint
+      - "--entrypoints.websecure.address=:443" # HTTPS entrypoint
+      - "--certificatesresolvers.myresolver.acme.email=${ACME_EMAIL}" # Email for Let's Encrypt registration
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json" # Storage for Let's Encrypt certificates
+      - "--certificatesresolvers.myresolver.acme.httpchallenge=true" # Use HTTP challenge for Let's Encrypt
+      - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web" # Use HTTP entrypoint for Let's Encrypt challenge
+    ports:
+      - "80:80" # Expose HTTP port
+      - "443:443" # Expose HTTPS port
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro # Mount Docker socket for Traefik to access Docker API
+      - /mnt/storage/hndrx.co/traefik/letsencrypt:/letsencrypt # Mount Let's Encrypt certificates storage
+    labels:
+      - "traefik.enable=true" # Enable Traefik for this service
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https" # Redirect HTTP to HTTPS
+      - "traefik.http.routers.traefik.rule=Host(`${TRAEFIK_HOST}`)" # Route Traefik dashboard to specified host
+      - "traefik.http.routers.traefik.entrypoints=websecure" # Use HTTPS entrypoint for Traefik dashboard
+      - "traefik.http.routers.traefik.tls=true" # Enable TLS for Traefik dashboard
+      - "traefik.http.routers.traefik.tls.certresolver=myresolver" # Use Let's Encrypt resolver for Traefik dashboard
+      - "traefik.http.routers.traefik.service=api@internal" # Use Traefik API for Traefik dashboard
+      - "traefik.http.routers.traefik.middlewares=redirect-to-https@docker" # Use redirect middleware for Traefik dashboard
+    networks:
+      - traefik # Use external network named "traefik"
+
+  # MySQL service for Nextcloud
+  mysql-nextcloud:
+    image: mysql:latest
+    restart: always
+    environment:
+      MYSQL_DATABASE: ${NEXTCLOUD_DB_NAME} # Set Nextcloud database name
+      MYSQL_USER: ${NEXTCLOUD_DB_USER} # Set Nextcloud database user
+      MYSQL_ROOT_PASSWORD: ${NEXTCLOUD_DB_ROOT_PASSWORD} # Set MySQL root password
+      MYSQL_PASSWORD: ${NEXTCLOUD_DB_PASSWORD} # Set Nextcloud database password
+    hostname: mysql-nextcloud # Set hostname for MySQL container
+    volumes:
+      - /mnt/storage/mysql-nextcloud:/var/lib/mysql # Mount MySQL data directory
+    networks:
+      - traefik # Use external network named "traefik"
+
+  # Nextcloud service
+  nextcloud:
+    image: nextcloud:latest
+    restart: always
+    hostname: nextcloud # Set hostname for Nextcloud container
+    environment:
+      VIRTUAL_HOST: ${NEXTCLOUD_HOST} # Set virtual host for Nextcloud
+      MYSQL_HOST: mysql-nextcloud # Set MySQL host for Nextcloud
+      MYSQL_DATABASE: ${NEXTCLOUD_DB_NAME} # Set Nextcloud database name
+      MYSQL_USER: ${NEXTCLOUD_DB_USER} # Set Nextcloud database user
+      MYSQL_PASSWORD: ${NEXTCLOUD_DB_PASSWORD} # Set Nextcloud database password
+      NEXTCLOUD_ADMIN_USER: ${NEXTCLOUD_ADMIN_USER} # Set Nextcloud admin user
+      NEXTCLOUD_ADMIN_PASSWORD: ${NEXTCLOUD_ADMIN_PASSWORD} # Set Nextcloud admin password
+      NEXTCLOUD_TRUSTED_DOMAINS: ${NEXTCLOUD_HOST} # Set trusted domains for Nextcloud
+    volumes:
+      - /mnt/storage/nextcloud/data:/var/www/html # Mount Nextcloud data directory
+      - /mnt/storage/nextcloud/config:/var/www/html/config # Mount Nextcloud config directory
+    labels:
+      - "traefik.enable=true" # Enable Traefik for this service
+      - "traefik.http.routers.nextcloud.rule=Host(`${NEXTCLOUD_HOST}`)" # Route Nextcloud to specified host
+      - "traefik.http.routers.nextcloud.entrypoints=websecure" # Use HTTPS entrypoint for Nextcloud
+      - "traefik.http.routers.nextcloud.tls=true" # Enable TLS for Nextcloud
+      - "traefik.http.services.ghost.loadbalancer.server.port=80" # Set load balancer port for Nextcloud
+      - "traefik.http.routers.nextcloud.tls.certresolver=myresolver" # Use Let's Encrypt resolver for Nextcloud
+      - "traefik.http.routers.nextcloud.middlewares=nc-rep,nc-header" # Use redirect and header middlewares for Nextcloud
+      - "traefik.http.middlewares.nc-rep.redirectregex.regex=https://(.*)/.well-known/(card|cal)dav" # Set regex for redirect middleware
+      - "traefik.http.middlewares.nc-rep.redirectregex.replacement=https://$$1/remote.php/dav/" # Set replacement for redirect middleware
+      - "traefik.http.middlewares.nc-rep.redirectregex.permanent=true" # Set redirect as permanent
+      - "traefik.http.middlewares.nc-header.headers.frameDeny=true" # Set header for frame deny
+      - "traefik.http.middlewares.nc-header.headers.sslRedirect=true" # Set header for SSL redirect
+      - "traefik.http.middlewares.nc-header.headers.contentTypeNosniff=true" # Set header for content type nosniff
+      - "traefik.http.middlewares.nc-header.headers.stsIncludeSubdomains=true" # Set header for STS include subdomains
+      - "traefik.http.middlewares.nc-header.headers.stsPreload=true" # Set header for STS preload
+      - "traefik.http.middlewares.nc-header.headers.stsSeconds=31536000" # Set header for STS seconds
+      - "traefik.http.middlewares.nc-header.headers.referrerPolicy=same-origin" # Set header for referrer policy
+      - "traefik.http.middlewares.nc-header.headers.browserXssFilter=true" # Set header for browser XSS filter
+      - "traefik.http.middlewares.nc-header.headers.customRequestHeaders.X-Forwarded-Proto=https" # Set custom request header for X-Forwarded-Proto
+      - "traefik.http.middlewares.nc-header.headers.customRequestHeaders.X-Forwarded-Proto=websecure" # Set custom request header for X-Forwarded-Proto
+      - "traefik.http.middlewares.nc-header.headers.customResponseHeaders.X-Robots-Tag=none" # Set custom response header for X-Robots-Tag
+      - "traefik.http.middlewares.nc-header.headers.customFrameOptionsValue=SAMEORIGIN" # Set custom frame options value
+    networks:
+      - traefik # Use external network named "traefik"
+
+  # MySQL service for Ghost
+  mysql-ghost:
+    image: mysql:latest
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${GHOST_DB_ROOT_PASSWORD} # Set MySQL root password
+      MYSQL_DATABASE: ${GHOST_DB_NAME} # Set Ghost database name
+      MYSQL_USER: ${GHOST_DB_USER} # Set Ghost database user
+      MYSQL_PASSWORD: ${GHOST_DB_PASSWORD} # Set Ghost database password
+    volumes:
+      - /mnt/storage/mysql-ghost:/var/lib/mysql # Mount MySQL data directory
+    hostname: mysql-ghost # Set hostname for MySQL container
+    networks:
+      - traefik # Use external network named "traefik"
+
+  # Ghost service
+  ghost:
+    image: ghost:latest
+    restart: always
+    environment:
+      url: ${GHOST_URL} # Set Ghost URL
+      database__client: mysql # Set Ghost database client
+      database__connection__host: mysql-ghost # Set MySQL host for Ghost
+      database__connection__user: ${GHOST_DB_USER} # Set Ghost database user
+      database__connection__password: ${GHOST_DB_PASSWORD} # Set Ghost database password
+      database__connection__database: ${GHOST_DB_NAME} # Set Ghost database name
+    volumes:
+      - /mnt/storage/ghost/content:/var/lib/ghost/content # Mount Ghost content directory
+    labels:
+      - "traefik.enable=true" # Enable Traefik for this service
+      - "traefik.http.routers.ghost.rule=Host(`${GHOST_DOMAIN}`)" # Route Ghost to specified host
+      - "traefik.http.routers.ghost.entrypoints=websecure" # Use HTTPS entrypoint for Ghost
+      - "traefik.http.routers.ghost.tls=true" # Enable TLS for Ghost
+      - "traefik.http.routers.ghost.tls.certresolver=myresolver" # Use Let's Encrypt resolver for Ghost
+      - "traefik.http.services.ghost.loadbalancer.server.port=2368" # Set load balancer port for Ghost
+      - "traefik.http.routers.ghost.middlewares=redirect-to-https@docker" # Use redirect middleware for Ghost
+    networks:
+      - traefik # Use external network named "traefik"
+
+
+networks:
+  traefik:
+    external: true # Use external network named "traefik"
+
+# version: '3'
+
+# services:
+#   traefik:
+#     image: traefik:v2.4
+#     command:
+#       - "--api.insecure=true"
+#       - "--providers.docker=true"
+#       - "--providers.docker.exposedbydefault=false"
+#       - "--entrypoints.web.address=:80"
+#       - "--entrypoints.websecure.address=:443"
+#       - "--certificatesresolvers.myresolver.acme.email=${ACME_EMAIL}"
+#       - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+#       - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
+#       - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
+#     ports:
+#       - "80:80"
+#       - "443:443"
+#     volumes:
+#       - /var/run/docker.sock:/var/run/docker.sock:ro
+#       - /mnt/storage/hndrx.co/traefik/letsencrypt:/letsencrypt
+#     labels:
+#       - "traefik.enable=true"
+#       - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+#       - "traefik.http.routers.traefik.rule=Host(`${TRAEFIK_HOST}`)"
+#       - "traefik.http.routers.traefik.entrypoints=websecure"
+#       - "traefik.http.routers.traefik.tls=true"
+#       - "traefik.http.routers.traefik.tls.certresolver=myresolver"
+#       - "traefik.http.routers.traefik.service=api@internal"
+#       - "traefik.http.routers.traefik.middlewares=redirect-to-https@docker"
+#     networks:
+#       - traefik
+
+#   mysql-nextcloud:
+#     image: mysql:latest
+#     restart: always
+#     environment:
+#       MYSQL_DATABASE: ${NEXTCLOUD_DB_NAME}
+#       MYSQL_USER: ${NEXTCLOUD_DB_USER}
+#       MYSQL_ROOT_PASSWORD: ${NEXTCLOUD_DB_ROOT_PASSWORD}
+#       MYSQL_PASSWORD: ${NEXTCLOUD_DB_PASSWORD}
+#     hostname: mysql-nextcloud
+#     volumes:
+#       - /mnt/storage/mysql-nextcloud:/var/lib/mysql
+#     networks:
+#       - traefik
+
+#   nextcloud:
+#     image: nextcloud:latest
+#     restart: always
+#     hostname: nextcloud
+#     environment:
+#       VIRTUAL_HOST: ${NEXTCLOUD_HOST}
+#       MYSQL_HOST: mysql-nextcloud
+#       MYSQL_DATABASE: ${NEXTCLOUD_DB_NAME}
+#       MYSQL_USER: ${NEXTCLOUD_DB_USER}
+#       MYSQL_PASSWORD: ${NEXTCLOUD_DB_PASSWORD}
+#       NEXTCLOUD_ADMIN_USER: ${NEXTCLOUD_ADMIN_USER}
+#       NEXTCLOUD_ADMIN_PASSWORD: ${NEXTCLOUD_ADMIN_PASSWORD}
+#       NEXTCLOUD_TRUSTED_DOMAINS: ${NEXTCLOUD_HOST}
+#     volumes:
+#       - /mnt/storage/nextcloud/data:/var/www/html
+#       - /mnt/storage/nextcloud/config:/var/www/html/config
+#     labels:
+#       - "traefik.enable=true"
+#       - "traefik.http.routers.nextcloud.rule=Host(`${NEXTCLOUD_HOST}`)"
+#       - "traefik.http.routers.nextcloud.entrypoints=websecure"
+#       - "traefik.http.routers.nextcloud.tls=true"
+#       - "traefik.http.services.ghost.loadbalancer.server.port=80"
+#       - "traefik.http.routers.nextcloud.tls.certresolver=myresolver"
+#       - "traefik.http.routers.nextcloud.middlewares=nc-rep,nc-header"
+#       - "traefik.http.middlewares.nc-rep.redirectregex.regex=https://(.*)/.well-known/(card|cal)dav"
+#       - "traefik.http.middlewares.nc-rep.redirectregex.replacement=https://$$1/remote.php/dav/"
+#       - "traefik.http.middlewares.nc-rep.redirectregex.permanent=true"
+#       - "traefik.http.middlewares.nc-header.headers.frameDeny=true"
+#       - "traefik.http.middlewares.nc-header.headers.sslRedirect=true"
+#       - "traefik.http.middlewares.nc-header.headers.contentTypeNosniff=true"
+#       - "traefik.http.middlewares.nc-header.headers.stsIncludeSubdomains=true"
+#       - "traefik.http.middlewares.nc-header.headers.stsPreload=true"
+#       - "traefik.http.middlewares.nc-header.headers.stsSeconds=31536000"
+#       - "traefik.http.middlewares.nc-header.headers.referrerPolicy=same-origin"
+#       - "traefik.http.middlewares.nc-header.headers.browserXssFilter=true"
+#       - "traefik.http.middlewares.nc-header.headers.customRequestHeaders.X-Forwarded-Proto=https"
+#       - "traefik.http.middlewares.nc-header.headers.customRequestHeaders.X-Forwarded-Proto=websecure"
+#       - "traefik.http.middlewares.nc-header.headers.customResponseHeaders.X-Robots-Tag=none"
+#       - "traefik.http.middlewares.nc-header.headers.customFrameOptionsValue=SAMEORIGIN"
+#     networks:
+#       - traefik
+
+#   mysql-ghost:
+#     image: mysql:latest
+#     restart: always
+#     environment:
+#       MYSQL_ROOT_PASSWORD: ${GHOST_DB_ROOT_PASSWORD}
+#       MYSQL_DATABASE: ${GHOST_DB_NAME}
+#       MYSQL_USER: ${GHOST_DB_USER}
+#       MYSQL_PASSWORD: ${GHOST_DB_PASSWORD}
+#     volumes:
+#       - /mnt/storage/mysql-ghost:/var/lib/mysql
+#     hostname: mysql-ghost
+#     networks:
+#       - traefik
+
+#   ghost:
+#     image: ghost:latest
+#     restart: always
+#     environment:
+#       url: ${GHOST_URL}
+#       database__client: mysql
+#       database__connection__host: mysql-ghost
+#       database__connection__user: ${GHOST_DB_USER}
+#       database__connection__password: ${GHOST_DB_PASSWORD}
+#       database__connection__database: ${GHOST_DB_NAME}
+#     volumes:
+#       - /mnt/storage/ghost/content:/var/lib/ghost/content
+#     labels:
+#       - "traefik.enable=true"
+#       - "traefik.http.routers.ghost.rule=Host(`${GHOST_DOMAIN}`)"
+#       - "traefik.http.routers.ghost.entrypoints=websecure"
+#       - "traefik.http.routers.ghost.tls=true"
+#       - "traefik.http.routers.ghost.tls.certresolver=myresolver"
+#       - "traefik.http.services.ghost.loadbalancer.server.port=2368"
+#       - "traefik.http.routers.ghost.middlewares=redirect-to-https@docker"
+#     networks:
+#       - traefik
+
+
+# networks:
+#   traefik:
+#     external: true

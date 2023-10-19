@@ -1,0 +1,113 @@
+version: "3"
+
+# Define a custom network for the services to communicate with each other
+networks:
+  jenk_prom_graf_lab:
+    driver: bridge
+
+# Define the services that will be run in the containers
+services:
+
+  # Grafana service
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    volumes:
+      # Mount the Grafana plugins directory to the container
+      - /opt/docker/grafana/plugins:/var/lib/grafana/plugins
+      # Mount the Grafana data directory to the container
+      - grafana_data:/opt/docker/grafana/data
+    ports:
+      # Expose the Grafana service on port 3000
+      - 3000:3000
+    networks:
+      # Connect the Grafana service to the custom network
+      - jenk_prom_graf_lab
+    restart: unless-stopped
+
+  # Prometheus service
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      # Mount the Prometheus data directory to the container
+      - prometheus_data:/opt/docker/prometheus/data
+      # Mount the Prometheus configuration directory to the container
+      - /opt/docker/prometheus/data/config:/etc/prometheus
+    command:
+      # Specify the Prometheus configuration file
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      # Specify the Prometheus data directory
+      - '--storage.tsdb.path=/opt/docker/prometheus/data/config'
+      # Specify the Prometheus console libraries directory
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      # Specify the Prometheus console templates directory
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      # Expose the Prometheus service on port 9090
+      - 9090:9090
+    networks:
+      # Connect the Prometheus service to the custom network
+      - jenk_prom_graf_lab
+    restart: unless-stopped
+  
+  # InfluxDB service
+  influxdb:
+    image: influxdb:1.8.6-alpine
+    container_name: influxdb
+    volumes:
+      # Mount the InfluxDB data directory to the container
+      - influxdb_data:/opt/docker/influxdb/data
+    ports:
+      # Expose the InfluxDB service on port 8086
+      - 8086:8086
+    networks:
+      # Connect the InfluxDB service to the custom network
+      - jenk_prom_graf_lab
+    restart: unless-stopped
+  
+  # Jenkins service
+  jenkins:
+    image: jenkins/jenkins:lts-jdk11
+    container_name: jenkins
+    volumes:
+      # Mount the Jenkins data directory to the container
+      - jenkins_data:/opt/docker/jenkins/data
+      # Mount the Jenkins plugins directory to the container
+      - /opt/docker/jenkins/plugins:/var/jenkins_home/plugins
+    ports:
+      # Expose the Jenkins service on port 8080
+      - 8080:8080
+      # Expose the Jenkins service on port 50000
+      - 50000:50000
+    networks:
+      # Connect the Jenkins service to the custom network
+      - jenk_prom_graf_lab
+    restart: unless-stopped
+
+# Define the volumes that will be used by the services
+volumes:
+  jenkins_data:
+    driver_opts:
+      # Mount the Jenkins data directory as a bind mount
+      type: none
+      device: /opt/docker/jenkins/data
+      o: bind
+  grafana_data:
+    driver_opts:
+      # Mount the Grafana data directory as a bind mount
+      type: none
+      device: /opt/docker/grafana/data
+      o: bind
+  influxdb_data:
+    driver_opts:
+      # Mount the InfluxDB data directory as a bind mount
+      type: none
+      device: /opt/docker/influxdb/data
+      o: bind
+  prometheus_data:
+    driver_opts:
+      # Mount the Prometheus data directory as a bind mount
+      type: none
+      device: /opt/docker/prometheus/data
+      o: bind

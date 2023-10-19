@@ -1,0 +1,15 @@
+MYSQL_ROOT_PASSWORD=mysqlrootpass
+MYSQL_DATABASE=wordpress
+MYSQL_USER=wordpress
+MYSQL_PASSWORD=wordpress-password
+WORDPRESS_DB_HOST=dbhostname
+WORDPRESS_DB_USER=dbuser
+WORDPRESS_DB_PASSWORD=dbPassword
+WORDPRESS_DB_NAME=mysql-db-name
+WORDPRESS_DOMAIN=your.example.com
+WORDPRESS_ENTRYPOINT=websecure
+WORDPRESS_PORT=80
+MYSQL_VOLUME=/path/to/mysql/storage
+WORDPRESS_VOLUME=/path/to/wordpress/storage
+
+

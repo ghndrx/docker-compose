@@ -1,0 +1,46 @@
+version: '3.2'
+
+services:
+  vault:
+    image: hashicorp/vault:latest
+    container_name: vault
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_TOKEN}
+    cap_add:
+      - IPC_LOCK
+    expose:
+      - 8200
+    networks:
+      - traefik
+
+  supersecret:
+    build: ./
+    image: algolia/supersecretmessage:latest
+    container_name: supersecret
+    environment:
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${VAULT_TOKEN}
+      SUPERSECRETMESSAGE_HTTP_BINDING_ADDRESS: ":80"
+      SUPERSECRETMESSAGE_HTTPS_BINDING_ADDRESS: ":443"
+      SUPERSECRETMESSAGE_HTTPS_REDIRECT_ENABLED: "true"
+      SUPERSECRETMESSAGE_TLS_AUTO_DOMAIN: ${SECRET_HOST}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.secret-message.rule=Host(`$(SECRET_HOST)`)"
+      - "traefik.http.routers.secret-message.entrypoints=websecure"
+      - "traefik.http.routers.secret-message.tls=true"
+      - "traefik.http.routers.secret-message.tls.certresolver=myresolver"
+      - "traefik.http.routers.secret-message.middlewares=redirect-to-https"
+      - "traefik.http.routers.secret-message.service=secret-message"
+      - "traefik.http.services.secret-message.loadbalancer.server.port=80"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+    volumes:
+      - ${SECRET_STORAGE}:/app/data
+    networks:
+      - traefik
+    depends_on:
+      - vault
+
+networks:
+    traefik:
+      external: true

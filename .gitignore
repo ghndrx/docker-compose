@@ -1,0 +1,3 @@
+web-apps/docker-env.env
+wordpress/docker-wordpress-env.env
+secret-messages/docker-secrets-env.env
