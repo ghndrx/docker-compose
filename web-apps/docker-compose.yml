@@ -52,7 +52,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: my-nextcloud-image
+    image: nextcloud-full:latest
     # image: nextcloud:latest
     restart: always
     hostname: nextcloud # Set hostname for Nextcloud container
