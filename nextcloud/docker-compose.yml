@@ -1,0 +1,75 @@
+version: '3'
+
+services:
+   # MySQL service for Nextcloud
+  mysql-nextcloud:
+    image: mysql:latest
+    restart: always
+    environment:
+      MYSQL_DATABASE: ${NEXTCLOUD_DB_NAME} # Set Nextcloud database name
+      MYSQL_USER: ${NEXTCLOUD_DB_USER} # Set Nextcloud database user
+      MYSQL_ROOT_PASSWORD: ${NEXTCLOUD_DB_ROOT_PASSWORD} # Set MySQL root password
+      MYSQL_PASSWORD: ${NEXTCLOUD_DB_PASSWORD} # Set Nextcloud database password
+    hostname: mysql-nextcloud # Set hostname for MySQL container
+    volumes:
+      - /opt/storagemysql-nextcloud:/var/lib/mysql # Mount MySQL data directory
+    networks:
+      - traefik # Use external network named "traefik"
+
+  # Nextcloud service
+  nextcloud:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: nextcloud-full:latest
+    # image: nextcloud:latest
+    restart: always
+    hostname: nextcloud # Set hostname for Nextcloud container
+    environment:
+      VIRTUAL_HOST: ${NEXTCLOUD_HOST} # Set virtual host for Nextcloud
+      MYSQL_HOST: mysql-nextcloud # Set MySQL host for Nextcloud
+      MYSQL_DATABASE: ${NEXTCLOUD_DB_NAME} # Set Nextcloud database name
+      MYSQL_USER: ${NEXTCLOUD_DB_USER} # Set Nextcloud database user
+      MYSQL_PASSWORD: ${NEXTCLOUD_DB_PASSWORD} # Set Nextcloud database password
+      NEXTCLOUD_ADMIN_USER: ${NEXTCLOUD_ADMIN_USER} # Set Nextcloud admin user
+      NEXTCLOUD_ADMIN_PASSWORD: ${NEXTCLOUD_ADMIN_PASSWORD} # Set Nextcloud admin password
+      NEXTCLOUD_TRUSTED_DOMAINS: ${NEXTCLOUD_HOST} # Set trusted domains for Nextcloud
+    volumes:
+      - /opt/storagenextcloud/data:/var/www/html # Mount Nextcloud data directory
+      - /opt/storagenextcloud/config:/var/www/html/config # Mount Nextcloud config directory
+    labels:
+      - "traefik.enable=true" # Enable Traefik for this service
+      - "traefik.http.routers.nextcloud.rule=Host(`${NEXTCLOUD_HOST}`)" # Route Nextcloud to specified host
+      - "traefik.http.routers.nextcloud.entrypoints=websecure" # Use HTTPS entrypoint for Nextcloud
+      - "traefik.http.routers.nextcloud.tls=true" # Enable TLS for Nextcloud
+      - "traefik.http.services.ghost.loadbalancer.server.port=80" # Set load balancer port for Nextcloud
+      - "traefik.http.routers.nextcloud.tls.certresolver=myresolver" # Use Let's Encrypt resolver for Nextcloud
+      - "traefik.http.routers.nextcloud.middlewares=nc-rep,nc-header" # Use redirect and header middlewares for Nextcloud
+      - "traefik.http.middlewares.nc-rep.redirectregex.regex=https://(.*)/.well-known/(card|cal)dav" # Set regex for redirect middleware
+      - "traefik.http.middlewares.nc-rep.redirectregex.replacement=https://$$1/remote.php/dav/" # Set replacement for redirect middleware
+      - "traefik.http.middlewares.nc-rep.redirectregex.permanent=true" # Set redirect as permanent
+      - "traefik.http.middlewares.nc-header.headers.frameDeny=true" # Set header for frame deny
+      - "traefik.http.middlewares.nc-header.headers.sslRedirect=true" # Set header for SSL redirect
+      - "traefik.http.middlewares.nc-header.headers.contentTypeNosniff=true" # Set header for content type nosniff
+      - "traefik.http.middlewares.nc-header.headers.stsIncludeSubdomains=true" # Set header for STS include subdomains
+      - "traefik.http.middlewares.nc-header.headers.stsPreload=true" # Set header for STS preload
+      - "traefik.http.middlewares.nc-header.headers.stsSeconds=31536000" # Set header for STS seconds
+      - "traefik.http.middlewares.nc-header.headers.referrerPolicy=same-origin" # Set header for referrer policy
+      - "traefik.http.middlewares.nc-header.headers.browserXssFilter=true" # Set header for browser XSS filter
+      - "traefik.http.middlewares.nc-header.headers.customRequestHeaders.X-Forwarded-Proto=https" # Set custom request header for X-Forwarded-Proto
+      - "traefik.http.middlewares.nc-header.headers.customRequestHeaders.X-Forwarded-Proto=websecure" # Set custom request header for X-Forwarded-Proto
+      - "traefik.http.middlewares.nc-header.headers.customResponseHeaders.X-Robots-Tag=noindex, nofollow" # Set custom response header for X-Robots-Tag
+      - "traefik.http.middlewares.nc-header.headers.customFrameOptionsValue=SAMEORIGIN" # Set custom frame options value
+      # - "traefik.http.routers.nextcloud.middlewares: 'nextcloud_redirectregex'"
+      # - "traefik.http.middlewares.nextcloud_redirectregex.redirectregex.permanent: true"
+
+    networks:
+      - traefik # Use external network named "traefik"
+
+
+
+networks:
+  traefik:
+    external: true # Use external network named "traefik"
+
+

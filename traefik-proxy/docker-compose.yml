@@ -1,0 +1,40 @@
+version: '3'
+
+services:
+  # Traefik service for reverse proxy and SSL termination
+  traefik:
+    image: traefik:v2.4
+    command:
+      - "--api.insecure=true" # Enable insecure API for Traefik dashboard
+      - "--providers.docker=true" # Enable Docker provider for Traefik
+      - "--providers.docker.exposedbydefault=false" # Do not expose containers by default
+      - "--entrypoints.web.address=:80" # HTTP entrypoint
+      - "--entrypoints.websecure.address=:443" # HTTPS entrypoint
+      - "--certificatesresolvers.myresolver.acme.email=${ACME_EMAIL}" # Email for Let's Encrypt registration
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json" # Storage for Let's Encrypt certificates
+      - "--certificatesresolvers.myresolver.acme.httpchallenge=true" # Use HTTP challenge for Let's Encrypt
+      - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web" # Use HTTP entrypoint for Let's Encrypt challenge
+    ports:
+      - "80:80" # Expose HTTP port
+      - "443:443" # Expose HTTPS port
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro # Mount Docker socket for Traefik to access Docker API
+      - /opt/storagehndrx.co/traefik/letsencrypt:/letsencrypt # Mount Let's Encrypt certificates storage
+    labels:
+      - "traefik.enable=true" # Enable Traefik for this service
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https" # Redirect HTTP to HTTPS
+      - "traefik.http.routers.traefik.rule=Host(`${TRAEFIK_HOST}`)" # Route Traefik dashboard to specified host
+      - "traefik.http.routers.traefik.entrypoints=websecure" # Use HTTPS entrypoint for Traefik dashboard
+      - "traefik.http.routers.traefik.tls=true" # Enable TLS for Traefik dashboard
+      - "traefik.http.routers.traefik.tls.certresolver=myresolver" # Use Let's Encrypt resolver for Traefik dashboard
+      - "traefik.http.routers.traefik.service=api@internal" # Use Traefik API for Traefik dashboard
+      - "traefik.http.routers.traefik.middlewares=redirect-to-https@docker" # Use redirect middleware for Traefik dashboard
+    networks:
+      - traefik # Use external network named "traefik"
+
+      
+
+#This specifies external network traefik - docker network create traefik is required (managed outside of docker-compose)
+networks:
+  traefik:
+    external: true # Use external network named "traefik"
