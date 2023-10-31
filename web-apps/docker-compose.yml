@@ -19,7 +19,7 @@ services:
       - "443:443" # Expose HTTPS port
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro # Mount Docker socket for Traefik to access Docker API
-      - /mnt/storage/hndrx.co/traefik/letsencrypt:/letsencrypt # Mount Let's Encrypt certificates storage
+      - /opt/storagehndrx.co/traefik/letsencrypt:/letsencrypt # Mount Let's Encrypt certificates storage
     labels:
       - "traefik.enable=true" # Enable Traefik for this service
       - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https" # Redirect HTTP to HTTPS
@@ -43,7 +43,7 @@ services:
       MYSQL_PASSWORD: ${NEXTCLOUD_DB_PASSWORD} # Set Nextcloud database password
     hostname: mysql-nextcloud # Set hostname for MySQL container
     volumes:
-      - /mnt/storage/mysql-nextcloud:/var/lib/mysql # Mount MySQL data directory
+      - /opt/storagemysql-nextcloud:/var/lib/mysql # Mount MySQL data directory
     networks:
       - traefik # Use external network named "traefik"
 
@@ -66,8 +66,8 @@ services:
       NEXTCLOUD_ADMIN_PASSWORD: ${NEXTCLOUD_ADMIN_PASSWORD} # Set Nextcloud admin password
       NEXTCLOUD_TRUSTED_DOMAINS: ${NEXTCLOUD_HOST} # Set trusted domains for Nextcloud
     volumes:
-      - /mnt/storage/nextcloud/data:/var/www/html # Mount Nextcloud data directory
-      - /mnt/storage/nextcloud/config:/var/www/html/config # Mount Nextcloud config directory
+      - /opt/storagenextcloud/data:/var/www/html # Mount Nextcloud data directory
+      - /opt/storagenextcloud/config:/var/www/html/config # Mount Nextcloud config directory
     labels:
       - "traefik.enable=true" # Enable Traefik for this service
       - "traefik.http.routers.nextcloud.rule=Host(`${NEXTCLOUD_HOST}`)" # Route Nextcloud to specified host
@@ -91,8 +91,8 @@ services:
       - "traefik.http.middlewares.nc-header.headers.customRequestHeaders.X-Forwarded-Proto=websecure" # Set custom request header for X-Forwarded-Proto
       - "traefik.http.middlewares.nc-header.headers.customResponseHeaders.X-Robots-Tag=noindex, nofollow" # Set custom response header for X-Robots-Tag
       - "traefik.http.middlewares.nc-header.headers.customFrameOptionsValue=SAMEORIGIN" # Set custom frame options value
-      - "traefik.http.routers.nextcloud.middlewares: 'nextcloud_redirectregex'"
-      - "traefik.http.middlewares.nextcloud_redirectregex.redirectregex.permanent: true"
+      # - "traefik.http.routers.nextcloud.middlewares: 'nextcloud_redirectregex'"
+      # - "traefik.http.middlewares.nextcloud_redirectregex.redirectregex.permanent: true"
 
     networks:
       - traefik # Use external network named "traefik"
@@ -107,7 +107,7 @@ services:
   #     MYSQL_USER: ${GHOST_DB_USER} # Set Ghost database user
   #     MYSQL_PASSWORD: ${GHOST_DB_PASSWORD} # Set Ghost database password
   #   volumes:
-  #     - /mnt/storage/mysql-ghost:/var/lib/mysql # Mount MySQL data directory
+  #     - /opt/storagemysql-ghost:/var/lib/mysql # Mount MySQL data directory
   #   hostname: mysql-ghost # Set hostname for MySQL container
   #   networks:
   #     - traefik # Use external network named "traefik"
@@ -124,7 +124,7 @@ services:
   #     database__connection__password: ${GHOST_DB_PASSWORD} # Set Ghost database password
   #     database__connection__database: ${GHOST_DB_NAME} # Set Ghost database name
   #   volumes:
-  #     - /mnt/storage/ghost/content:/var/lib/ghost/content # Mount Ghost content directory
+  #     - opt/storageghost/content:/var/lib/ghost/content # Mount Ghost content directory
   #   labels:
   #     - "traefik.enable=true" # Enable Traefik for this service
   #     - "traefik.http.routers.ghost.rule=Host(`${GHOST_DOMAIN}`)" # Route Ghost to specified host
@@ -164,7 +164,7 @@ networks:
 #       - "443:443"
 #     volumes:
 #       - /var/run/docker.sock:/var/run/docker.sock:ro
-#       - /mnt/storage/hndrx.co/traefik/letsencrypt:/letsencrypt
+#       - opt/storagehndrx.co/traefik/letsencrypt:/letsencrypt
 #     labels:
 #       - "traefik.enable=true"
 #       - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
@@ -187,7 +187,7 @@ networks:
 #       MYSQL_PASSWORD: ${NEXTCLOUD_DB_PASSWORD}
 #     hostname: mysql-nextcloud
 #     volumes:
-#       - /mnt/storage/mysql-nextcloud:/var/lib/mysql
+#       - opt/storagemysql-nextcloud:/var/lib/mysql
 #     networks:
 #       - traefik
 
@@ -205,8 +205,8 @@ networks:
 #       NEXTCLOUD_ADMIN_PASSWORD: ${NEXTCLOUD_ADMIN_PASSWORD}
 #       NEXTCLOUD_TRUSTED_DOMAINS: ${NEXTCLOUD_HOST}
 #     volumes:
-#       - /mnt/storage/nextcloud/data:/var/www/html
-#       - /mnt/storage/nextcloud/config:/var/www/html/config
+#       - opt/storagenextcloud/data:/var/www/html
+#       - /opt/storagenextcloud/config:/var/www/html/config
 #     labels:
 #       - "traefik.enable=true"
 #       - "traefik.http.routers.nextcloud.rule=Host(`${NEXTCLOUD_HOST}`)"
@@ -242,7 +242,7 @@ networks:
 #       MYSQL_USER: ${GHOST_DB_USER}
 #       MYSQL_PASSWORD: ${GHOST_DB_PASSWORD}
 #     volumes:
-#       - /mnt/storage/mysql-ghost:/var/lib/mysql
+#       - /opt/storagemysql-ghost:/var/lib/mysql
 #     hostname: mysql-ghost
 #     networks:
 #       - traefik
@@ -258,7 +258,7 @@ networks:
 #       database__connection__password: ${GHOST_DB_PASSWORD}
 #       database__connection__database: ${GHOST_DB_NAME}
 #     volumes:
-#       - /mnt/storage/ghost/content:/var/lib/ghost/content
+#       - /opt/storageghost/content:/var/lib/ghost/content
 #     labels:
 #       - "traefik.enable=true"
 #       - "traefik.http.routers.ghost.rule=Host(`${GHOST_DOMAIN}`)"
