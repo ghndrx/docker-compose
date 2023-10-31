@@ -97,50 +97,53 @@ services:
     networks:
       - traefik # Use external network named "traefik"
 
-  # MySQL service for Ghost
-  mysql-ghost:
-    image: mysql:latest
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: ${GHOST_DB_ROOT_PASSWORD} # Set MySQL root password
-      MYSQL_DATABASE: ${GHOST_DB_NAME} # Set Ghost database name
-      MYSQL_USER: ${GHOST_DB_USER} # Set Ghost database user
-      MYSQL_PASSWORD: ${GHOST_DB_PASSWORD} # Set Ghost database password
-    volumes:
-      - /mnt/storage/mysql-ghost:/var/lib/mysql # Mount MySQL data directory
-    hostname: mysql-ghost # Set hostname for MySQL container
-    networks:
-      - traefik # Use external network named "traefik"
+  # # MySQL service for Ghost
+  # mysql-ghost:
+  #   image: mysql:latest
+  #   restart: always
+  #   environment:
+  #     MYSQL_ROOT_PASSWORD: ${GHOST_DB_ROOT_PASSWORD} # Set MySQL root password
+  #     MYSQL_DATABASE: ${GHOST_DB_NAME} # Set Ghost database name
+  #     MYSQL_USER: ${GHOST_DB_USER} # Set Ghost database user
+  #     MYSQL_PASSWORD: ${GHOST_DB_PASSWORD} # Set Ghost database password
+  #   volumes:
+  #     - /mnt/storage/mysql-ghost:/var/lib/mysql # Mount MySQL data directory
+  #   hostname: mysql-ghost # Set hostname for MySQL container
+  #   networks:
+  #     - traefik # Use external network named "traefik"
 
-  # Ghost service
-  ghost:
-    image: ghost:latest
-    restart: always
-    environment:
-      url: ${GHOST_URL} # Set Ghost URL
-      database__client: mysql # Set Ghost database client
-      database__connection__host: mysql-ghost # Set MySQL host for Ghost
-      database__connection__user: ${GHOST_DB_USER} # Set Ghost database user
-      database__connection__password: ${GHOST_DB_PASSWORD} # Set Ghost database password
-      database__connection__database: ${GHOST_DB_NAME} # Set Ghost database name
-    volumes:
-      - /mnt/storage/ghost/content:/var/lib/ghost/content # Mount Ghost content directory
-    labels:
-      - "traefik.enable=true" # Enable Traefik for this service
-      - "traefik.http.routers.ghost.rule=Host(`${GHOST_DOMAIN}`)" # Route Ghost to specified host
-      - "traefik.http.routers.ghost.entrypoints=websecure" # Use HTTPS entrypoint for Ghost
-      - "traefik.http.routers.ghost.tls=true" # Enable TLS for Ghost
-      - "traefik.http.routers.ghost.tls.certresolver=myresolver" # Use Let's Encrypt resolver for Ghost
-      - "traefik.http.services.ghost.loadbalancer.server.port=2368" # Set load balancer port for Ghost
-      - "traefik.http.routers.ghost.middlewares=redirect-to-https@docker" # Use redirect middleware for Ghost
-    networks:
-      - traefik # Use external network named "traefik"
+  # # Ghost service
+  # ghost:
+  #   image: ghost:latest
+  #   restart: always
+  #   environment:
+  #     url: ${GHOST_URL} # Set Ghost URL
+  #     database__client: mysql # Set Ghost database client
+  #     database__connection__host: mysql-ghost # Set MySQL host for Ghost
+  #     database__connection__user: ${GHOST_DB_USER} # Set Ghost database user
+  #     database__connection__password: ${GHOST_DB_PASSWORD} # Set Ghost database password
+  #     database__connection__database: ${GHOST_DB_NAME} # Set Ghost database name
+  #   volumes:
+  #     - /mnt/storage/ghost/content:/var/lib/ghost/content # Mount Ghost content directory
+  #   labels:
+  #     - "traefik.enable=true" # Enable Traefik for this service
+  #     - "traefik.http.routers.ghost.rule=Host(`${GHOST_DOMAIN}`)" # Route Ghost to specified host
+  #     - "traefik.http.routers.ghost.entrypoints=websecure" # Use HTTPS entrypoint for Ghost
+  #     - "traefik.http.routers.ghost.tls=true" # Enable TLS for Ghost
+  #     - "traefik.http.routers.ghost.tls.certresolver=myresolver" # Use Let's Encrypt resolver for Ghost
+  #     - "traefik.http.services.ghost.loadbalancer.server.port=2368" # Set load balancer port for Ghost
+  #     - "traefik.http.routers.ghost.middlewares=redirect-to-https@docker" # Use redirect middleware for Ghost
+  #   networks:
+  #     - traefik # Use external network named "traefik"
 
 
 networks:
   traefik:
     external: true # Use external network named "traefik"
 
+
+
+#Same shit as above basically ^ working is above.
 # version: '3'
 
 # services:
