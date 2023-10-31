@@ -85,8 +85,11 @@ services:
       - "traefik.http.middlewares.nc-header.headers.browserXssFilter=true" # Set header for browser XSS filter
       - "traefik.http.middlewares.nc-header.headers.customRequestHeaders.X-Forwarded-Proto=https" # Set custom request header for X-Forwarded-Proto
       - "traefik.http.middlewares.nc-header.headers.customRequestHeaders.X-Forwarded-Proto=websecure" # Set custom request header for X-Forwarded-Proto
-      - "traefik.http.middlewares.nc-header.headers.customResponseHeaders.X-Robots-Tag=none" # Set custom response header for X-Robots-Tag
+      - "traefik.http.middlewares.nc-header.headers.customResponseHeaders.X-Robots-Tag=noindex, nofollow" # Set custom response header for X-Robots-Tag
       - "traefik.http.middlewares.nc-header.headers.customFrameOptionsValue=SAMEORIGIN" # Set custom frame options value
+      - "traefik.http.routers.nextcloud.middlewares: 'nextcloud_redirectregex'"
+      - "traefik.http.middlewares.nextcloud_redirectregex.redirectregex.permanent: true"
+
     networks:
       - traefik # Use external network named "traefik"
 
