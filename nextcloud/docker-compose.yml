@@ -67,7 +67,7 @@ services:
       - traefik # Use external network named "traefik"
 
 
-
+#This specifies external network traefik - ```docker network create traefik``` is required (managed outside of docker-compose)
 networks:
   traefik:
     external: true # Use external network named "traefik"
