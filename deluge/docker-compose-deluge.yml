@@ -10,8 +10,8 @@ services:
       - TZ=Etc/UTC
       - DELUGE_LOGLEVEL=error #optional
     volumes:
-      - /opt/docker/deluge/config:/config
-      - /opt/docker/deluge/downloads:/downloads
+      - /opt/deluge/config:/config
+      - /opt/deluge/downloads:/downloads
     ports:
       - 8112:8112
       - 6881:6881
