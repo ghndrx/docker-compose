@@ -11,7 +11,7 @@ services:
       - DELUGE_LOGLEVEL=error #optional
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.deluge.rule=Host(`deluge.hndrx.co`)"
+      - "traefik.http.routers.deluge.rule=Host(`${DOMAINNAME}`)"
       - "traefik.http.routers.deluge.entrypoints=websecure"
       - "traefik.http.routers.deluge.tls=true"
       - "traefik.http.routers.deluge.tls.certresolver=myresolver"
