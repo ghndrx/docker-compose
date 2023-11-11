@@ -9,6 +9,13 @@ services:
       - PGID=1000
       - TZ=Etc/UTC
       - DELUGE_LOGLEVEL=error #optional
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.deluge.rule=Host(`deluge.hndrx.co`)"
+      - "traefik.http.routers.deluge.entrypoints=websecure"
+      - "traefik.http.routers.deluge.tls=true"
+      - "traefik.http.routers.deluge.tls.certresolver=myresolver"
+      - "traefik.http.services.deluge.loadbalancer.server.port=8112"
     volumes:
       - /opt/deluge/config:/config
       - /opt/deluge/downloads:/downloads
