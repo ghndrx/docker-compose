@@ -10,15 +10,15 @@ services:
       - DELUGE_LOGLEVEL=error #optional
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.deluge.rule=Host(`deluge.hndrx.co`)"
+      - "traefik.http.routers.deluge.rule=Host(`${DOMAIN_NAME}`)"
       - "traefik.http.routers.deluge.entrypoints=websecure"
       - "traefik.http.routers.deluge.tls=true"
-      - "traefik.http.routers.deluge.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.deluge.tls.certresolver=myresolver"
       - "traefik.http.services.deluge.loadbalancer.server.port=8112"
 
     volumes:
-      - /opt/deluge/config:/config
-      - /opt/deluge/downloads:/downloads
+      - ${SOURCE}/config:/config
+      - ${SOURCE}/downloads:/downloads
     ports:
       - 8112:8112
       - 6881:6881
