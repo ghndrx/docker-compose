@@ -1,5 +1,4 @@
----
-version: "2.1"
+version: "3"
 services:
   deluge:
     image: lscr.io/linuxserver/deluge:latest
@@ -11,11 +10,12 @@ services:
       - DELUGE_LOGLEVEL=error #optional
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.deluge.rule=Host(`${DOMAINNAME}`)"
+      - "traefik.http.routers.deluge.rule=Host(`deluge.hndrx.co`)"
       - "traefik.http.routers.deluge.entrypoints=websecure"
       - "traefik.http.routers.deluge.tls=true"
-      - "traefik.http.routers.deluge.tls.certresolver=myresolver"
+      - "traefik.http.routers.deluge.tls.certresolver=letsencrypt"
       - "traefik.http.services.deluge.loadbalancer.server.port=8112"
+
     volumes:
       - /opt/deluge/config:/config
       - /opt/deluge/downloads:/downloads
@@ -24,3 +24,12 @@ services:
       - 6881:6881
       - 6881:6881/udp
     restart: unless-stopped
+
+    networks:
+      - traefik # Use external network named "traefik"
+
+
+#This specifies external network traefik - ```docker network create traefik``` is required (managed outside of docker-compose)
+networks:
+  traefik:
+    external: true # Use external network named "traefik"
