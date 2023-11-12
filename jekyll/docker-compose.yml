@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  jekyll:
+    image: jekyll/jekyll:latest
+    command: jekyll serve --watch --force_polling
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jekyll.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.jekyll.entrypoints=websecure"
+      - "traefik.http.routers.jekyll.tls=true"
+      - "traefik.http.routers.jekyll.tls.certresolver=myresolver"
+    ports:
+      - "${JEKYLL_PORT:-4000}:4000"
+    volumes:
+      - "${JEKYLL_SOURCE:-.}:/srv/jekyll"
+    environment:
+      - DOMAIN=${DOMAIN}
