@@ -12,9 +12,9 @@ services:
       - 8200
     networks:
       - traefik
-
+#git clone https://github.com/algolia/sup3rS3cretMes5age in docker-compose folder
   supersecret:
-    build: ./
+    build: ./sup3rS3cretMes5age/
     image: algolia/supersecretmessage:latest
     container_name: supersecret
     environment:
