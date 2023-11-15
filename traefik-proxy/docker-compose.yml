@@ -5,7 +5,7 @@ services:
   traefik:
     image: traefik:v2.4
     command:
-      - "--api.insecure=true" # Enable insecure API for Traefik dashboard
+      - "--api.insecure=false" # disable insecure API for Traefik dashboard
       - "--providers.docker=true" # Enable Docker provider for Traefik
       - "--providers.docker.exposedbydefault=false" # Do not expose containers by default
       - "--entrypoints.web.address=:80" # HTTP entrypoint
