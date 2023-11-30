@@ -53,6 +53,33 @@ RUN mkdir -p \
     /var/run/supervisord \
 ;
 
+# Install dependencies
+RUN apt-get update && \
+    apt-get install -y build-essential wget cmake libx11-dev libopenblas-dev git
+
+# Install dlib
+RUN git clone https://github.com/davisking/dlib.git && \
+    cd dlib/dlib && \
+    mkdir build && \
+    cd build && \
+    cmake -DBUILD_SHARED_LIBS=ON .. && \
+    make && \
+    make install
+
+# Install pdlib
+RUN git clone https://github.com/goodspb/pdlib.git && \
+    cd pdlib && \
+    phpize && \
+    ./configure --enable-debug && \
+    make && \
+    make install
+
+# Enable pdlib in PHP ###zzz ensures it will load last and override any other settings
+RUN echo 'extension="pdlib.so"' >> /usr/local/etc/php/conf.d/zzz-php.ini
+
+RUN echo 'memory_limit = 9600M' >> /usr/local/etc/php/conf.d/zzz-php.ini
+
+
 COPY supervisord.conf /
 
 ENV NEXTCLOUD_UPDATE=1
