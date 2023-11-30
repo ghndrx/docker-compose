@@ -1,0 +1,42 @@
+version: '3.8'
+services:
+  plex:
+    image: lscr.io/linuxserver/plex:latest
+    container_name: plex
+    restart: unless-stopped
+    environment:
+      - PLEX_CLAIM=$PLEX_CLAIM
+      - PLEX_UID=1000
+      - PLEX_GID=1000
+      - TZ=America/Los_Angeles
+      - ADVERTISE_IP=https://{$PLEX_HOSTNAME}:443
+    volumes:
+      - /opt/storage/plex:/config
+      - /opt/storage/plex:/transcode
+      - /opt/storage/plex/data:/data
+    ports:
+      - 32400:32400/udp
+      - 32400:32400/tcp
+    hostname: "{$PLEX_HOSTNAME}"
+    labels:
+    - "traefik.enable=true"
+    - "traefik.backend=plex"
+    - "traefik.frontend.rule=${PLEX_HOSTNAME}"
+    - "traefik.port=32400"
+    - "traefik.protocol=https"
+    - "traefik.docker.network=traefik_proxy"
+    - "traefik.frontend.headers.SSLRedirect=true"
+    - "traefik.frontend.headers.STSSeconds=315360000"
+    - "traefik.frontend.headers.browserXSSFilter=true"
+    - "traefik.frontend.headers.contentTypeNosniff=true"
+    - "traefik.frontend.headers.forceSTSHeader=true"
+    - "traefik.frontend.headers.SSLHost=plexhndrx.co"
+    - "traefik.frontend.headers.STSIncludeSubdomains=true"  
+    - "traefik.frontend.headers.STSPreload=true"
+    - "traefik.frontend.headers.frameDeny=true"
+    networks:
+      - traefik
+
+networks:
+  traefik:
+    external: true # Use external network named "traefik"
