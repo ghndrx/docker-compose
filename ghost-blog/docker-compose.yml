@@ -14,7 +14,7 @@ services:
       - /opt/storagemysql-ghost:/var/lib/mysql # Mount MySQL data directory
     hostname: mysql-ghost # Set hostname for MySQL container
     networks:
-      - traefik # Use external network named "traefik"
+      - db # Use external network named "traefik"
 
   # Ghost service
   ghost:
@@ -44,3 +44,5 @@ services:
 networks:
   traefik:
     external: true # Use external network named "traefik"
+  db:
+    external: true # Use external network named "db"

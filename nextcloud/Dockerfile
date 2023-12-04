@@ -54,11 +54,15 @@ RUN mkdir -p \
 ;
 
 # Install additional dependencies
-RUN apt-get update && \
+RUN set -ex; \
+    \
+    apt-get update && \
+    \
     apt-get install -y build-essential wget cmake libx11-dev libopenblas-dev git 
 
 # Install dlib
-RUN git clone https://github.com/davisking/dlib.git && \
+RUN set -ex; \
+    git clone https://github.com/davisking/dlib.git && \
     cd dlib/dlib && \
     mkdir build && \
     cd build && \
@@ -67,7 +71,8 @@ RUN git clone https://github.com/davisking/dlib.git && \
     make install
 
 # Install pdlib
-RUN git clone https://github.com/goodspb/pdlib.git && \
+RUN set -ex; \
+    git clone https://github.com/goodspb/pdlib.git && \
     cd pdlib && \
     phpize && \
     ./configure --enable-debug && \
@@ -75,9 +80,9 @@ RUN git clone https://github.com/goodspb/pdlib.git && \
     make install
 
 # Enable pdlib in PHP ###zzz ensures it will load last and override any other settings
-RUN echo 'extension="pdlib.so"' >> /usr/local/etc/php/conf.d/zzz-php.ini
+RUN echo 'extension="pdlib.so"' >> /usr/local/etc/php/conf.d/zzz-php.ini \
 # Explicitly Increase memory limit in PHP
-RUN echo 'memory_limit = 9600M' >> /usr/local/etc/php/conf.d/zzz-php.ini
+    echo 'memory_limit = 9600M' >> /usr/local/etc/php/conf.d/zzz-php.ini
 
 COPY supervisord.conf /
 

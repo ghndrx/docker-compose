@@ -11,6 +11,7 @@ services:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      network: db
 
   wordpress:
     depends_on:
@@ -32,8 +33,12 @@ services:
       - "traefik.http.services.wordpress.loadbalancer.server.port=80"
     volumes:
       - ${WORDPRESS_VOLUME}:/var/www/html
+    networks: 
+      - traefik
 
 networks:
-  default:
-    external:
-      name: traefik
+  traefik:
+    external: true # Use external network named "traefik"
+  db:
+    external: true # Use external network named "db"
+

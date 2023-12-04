@@ -14,7 +14,7 @@ services:
     volumes:
       - /opt/storagemysql-nextcloud:/var/lib/mysql # Mount MySQL data directory
     networks:
-      - traefik # Use external network named "traefik"
+      - db # Use external network named "traefik"
 
   # Nextcloud service
   nextcloud:
@@ -71,5 +71,7 @@ services:
 networks:
   traefik:
     external: true # Use external network named "traefik"
+  db:
+    external: true # Use external network named "db"
 
 
